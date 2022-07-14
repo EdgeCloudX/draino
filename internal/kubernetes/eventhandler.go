@@ -594,10 +594,21 @@ func (h *DrainingResourceEventHandler) scheduleDrain(n *core.Node, failedCount i
 		h.eventRecorder.Eventf(nr, core.EventTypeWarning, eventReasonDrainSchedulingFailed, "Drain scheduling failed: %v", err)
 		return
 	}
-	log.Info("Drain scheduled ", zap.Time("after", when))
+	log.Info("Drain scheduled time: " + localTime(when))
 	tags, _ = tag.New(tags, tag.Upsert(TagResult, tagResultSucceeded)) // nolint:gosec
 	StatRecordForEachCondition(tags, n, GetNodeOffendingConditions(n, h.conditions), MeasureNodesDrainScheduled.M(1))
-	h.eventRecorder.Eventf(nr, core.EventTypeWarning, eventReasonDrainScheduled, "Will drain node after %s", when.Format(time.RFC3339Nano))
+	h.eventRecorder.Eventf(nr, core.EventTypeWarning, eventReasonDrainScheduled, "Will drain node after: %s .", localTime(when))
+
+}
+
+//modify by huangtl
+func localTime(now time.Time) string {
+	newTime := now
+	newTime = newTime.UTC().Add(8 * time.Hour)
+	year, mon, day := newTime.Date()
+	hour, min, sec := newTime.Clock()
+	return fmt.Sprintf("%d-%d-%d %02d:%02d:%02d\n",
+		year, mon, day, hour, min, sec)
 }
 
 func HasDrainRetryAnnotation(n *core.Node) bool {

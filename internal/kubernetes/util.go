@@ -111,7 +111,9 @@ func GetAPIResources(discoveryClient discovery.DiscoveryInterface) ([]metav1.API
 			}
 			resourceLists, err := discoveryClient.ServerResourcesForGroupVersion(gvd.GroupVersion)
 			if err != nil {
-				return nil, fmt.Errorf("cannot list server resources, %s", err)
+				//modify
+				continue
+				//return nil, fmt.Errorf("cannot list server resources, %s", err)
 			}
 
 			if resourceLists == nil {
@@ -161,7 +163,9 @@ func GetAPIResourcesForGroupsKindVersion(apiResources []metav1.APIResource, gvks
 		}
 
 		if !atLeastOneResourceFound {
-			return nil, fmt.Errorf("could not find any APIResource matching kind[.version[.group]]='%s'", gvkInput)
+			//modify
+			continue
+			//return nil, fmt.Errorf("could not find any APIResource matching kind[.version[.group]]='%s'", gvkInput)
 		}
 	}
 	return outputAPIResources, nil

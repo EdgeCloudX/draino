@@ -179,10 +179,16 @@ func (sg *SchedulesGroup) whenNextSchedule(failedCount int32, options *schedulin
 			period = *lastSchedule.customDrainBuffer
 		}
 		// compute next value
+		//if failedCount > 0 {
+		//	when = lastSchedule.when.Add(backoffDelay)
+		//} else {
+		//	when = lastSchedule.when.Add(period)
+		//}
+		// modify by huangtl
 		if failedCount > 0 {
-			when = lastSchedule.when.Add(backoffDelay)
+			when = time.Now().Add(backoffDelay)
 		} else {
-			when = lastSchedule.when.Add(period)
+			when = time.Now().Add(period)
 		}
 	}
 
