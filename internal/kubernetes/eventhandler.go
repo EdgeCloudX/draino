@@ -583,7 +583,8 @@ func (h *DrainingResourceEventHandler) scheduleDrain(n *core.Node, failedCount i
 	tags, _ := tag.New(context.Background(), tag.Upsert(TagNodeName, n.GetName())) // nolint:gosec
 	nr := &core.ObjectReference{Kind: "Node", Name: n.GetName(), UID: types.UID(n.GetName())}
 	log.Debug("Scheduling drain")
-	when, err := h.drainScheduler.Schedule(n, failedCount)
+	//modify
+	when, err := h.drainScheduler.Schedule(n, failedCount, h.buffer)
 	if err != nil {
 		if IsAlreadyScheduledError(err) {
 			return

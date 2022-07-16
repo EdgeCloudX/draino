@@ -38,7 +38,7 @@ const (
 
 type DrainScheduler interface {
 	HasSchedule(node *v1.Node) (has, failed bool)
-	Schedule(node *v1.Node, failedCount int32) (time.Time, error)
+	Schedule(node *v1.Node, failedCount int32, defaultDurationBuffer time.Duration) (time.Time, error)
 	DeleteSchedule(node *v1.Node)
 	DeleteScheduleByName(nodeName string)
 }
@@ -147,7 +147,7 @@ func (d *DrainSchedules) DeleteScheduleByName(name string) {
 
 func (sg *SchedulesGroup) whenNextSchedule(failedCount int32, options *schedulingOptions) time.Time {
 	// compute drain schedule time
-	sooner := time.Now().Add(SetConditionTimeout + time.Second)
+	//sooner := time.Now().Add(SetConditionTimeout + time.Second)
 	period := sg.period
 	backoffDelay := sg.backoffDelay
 	if options != nil && options.customBackoffRetryDelay != nil {
@@ -174,30 +174,34 @@ func (sg *SchedulesGroup) whenNextSchedule(failedCount int32, options *schedulin
 	}
 
 	// grab custom values if any
-	if lastSchedule != nil {
-		if lastSchedule.customDrainBuffer != nil {
-			period = *lastSchedule.customDrainBuffer
-		}
-		// compute next value
-		//if failedCount > 0 {
-		//	when = lastSchedule.when.Add(backoffDelay)
-		//} else {
-		//	when = lastSchedule.when.Add(period)
-		//}
-		// modify by huangtl
-		if failedCount > 0 {
-			when = time.Now().Add(backoffDelay)
-		} else {
-			when = time.Now().Add(period)
-		}
+	//if lastSchedule != nil {
+	//if lastSchedule.customDrainBuffer != nil {
+	//modiry
+	if options != nil && options.customDrainBuffer != nil {
+		period = *options.customDrainBuffer
 	}
 
-	if when.Before(sooner) {
-		when = sooner
-		if failedCount > 0 {
-			when = when.Add(backoffDelay)
-		}
+	//}
+	// compute next value
+	//if failedCount > 0 {
+	//	when = lastSchedule.when.Add(backoffDelay)
+	//} else {
+	//	when = lastSchedule.when.Add(period)
+	//}
+	// modify by huangtl
+	if failedCount > 0 {
+		when = time.Now().Add(backoffDelay)
+	} else {
+		when = time.Now().Add(period)
 	}
+	//}
+
+	//if when.Before(sooner) {
+	//	when = sooner
+	//	if failedCount > 0 {
+	//		when = when.Add(backoffDelay)
+	//	}
+	//}
 	return when
 }
 
@@ -230,7 +234,7 @@ func (sg *SchedulesGroup) removeSchedule(name string) {
 	}
 }
 
-func (d *DrainSchedules) Schedule(node *v1.Node, failedCount int32) (time.Time, error) {
+func (d *DrainSchedules) Schedule(node *v1.Node, failedCount int32, defaultDurationTime time.Duration) (time.Time, error) {
 	d.Lock()
 	scheduleGroup := d.getScheduleGroup(node)
 	if sched, ok := scheduleGroup.schedules[node.GetName()]; ok {
@@ -239,6 +243,10 @@ func (d *DrainSchedules) Schedule(node *v1.Node, failedCount int32) (time.Time, 
 	}
 
 	scheduleOptions, err := newScheduleOptions(node)
+	if scheduleOptions.customDrainBuffer == nil {
+		scheduleOptions.customDrainBuffer = &defaultDurationTime
+	}
+
 	if err != nil {
 		nr := &core.ObjectReference{Kind: "Node", Name: node.GetName(), UID: types.UID(node.GetName())}
 		d.eventRecorder.Eventf(nr, core.EventTypeWarning, eventReasonDrainConfig, err.Error())
